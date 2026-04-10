@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>FinLens — AI Financial Analysis</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#08080e;--surface:#101018;--surface2:#161622;--surface3:#1c1c2a;
+  --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.11);--border3:rgba(255,255,255,0.18);
+  --text:#eeedf8;--muted:#6e6d82;--muted2:#9998b0;
+  --accent:#7c6af7;--accent2:#b8b0ff;--accentglow:rgba(124,106,247,0.25);
+  --green:#00e5a0;--green-dim:rgba(0,229,160,0.08);--green-border:rgba(0,229,160,0.18);
+  --red:#ff5f6d;--red-dim:rgba(255,95,109,0.08);--red-border:rgba(255,95,109,0.18);
+  --amber:#ffcc44;--amber-dim:rgba(255,204,68,0.08);--amber-border:rgba(255,204,68,0.18);
+  --blue:#60b4ff;--blue-dim:rgba(96,180,255,0.08);
+  --fd:'Syne',sans-serif;--fb:'DM Sans',sans-serif;--fm:'DM Mono',monospace;
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--fb);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+
+/* NOISE */
+body::after{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:0.5}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:200;height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 2rem;background:rgba(8,8,14,0.8);backdrop-filter:blur(24px);border-bottom:0.5px solid var(--border)}
+.nav-logo{font-family:var(--fd);font-size:19px;font-weight:800;letter-spacing:-0.02em;background:linear-gradient(130deg,var(--accent2),#f093fb);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.nav-tag{font-family:var(--fm);font-size:11px;color:var(--muted);border:0.5px solid var(--border2);padding:3px 10px;border-radius:20px}
+
+/* HERO */
+.hero{position:relative;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 1.5rem 3rem;text-align:center;overflow:hidden}
+.hero-grid{position:absolute;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:52px 52px;mask-image:radial-gradient(ellipse 75% 65% at 50% 40%,black,transparent);pointer-events:none}
+.hero-orb{position:absolute;top:25%;left:50%;transform:translateX(-50%);width:600px;height:360px;background:radial-gradient(ellipse,rgba(124,106,247,0.18) 0%,transparent 70%);pointer-events:none}
+.eyebrow{display:inline-flex;align-items:center;gap:7px;font-family:var(--fm);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent2);background:rgba(184,176,255,0.08);border:0.5px solid rgba(184,176,255,0.2);padding:5px 15px;border-radius:20px;margin-bottom:1.75rem}
+.eyebrow-dot{width:6px;height:6px;border-radius:50%;background:var(--accent2);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.2}}
+h1{font-family:var(--fd);font-size:clamp(38px,6.5vw,70px);font-weight:800;line-height:1.04;letter-spacing:-0.03em;margin-bottom:1.25rem}
+h1 em{font-style:normal;background:linear-gradient(130deg,#b8b0ff 0%,#f093fb 50%,#ffeaa7 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero-sub{font-size:16px;color:var(--muted2);max-width:480px;line-height:1.75;font-weight:300;margin-bottom:3rem}
+
+/* SEARCH BOX */
+.search-wrap{position:relative;width:100%;max-width:580px;margin:0 auto}
+.search-box{display:flex;align-items:center;gap:0;background:var(--surface);border:0.5px solid var(--border3);border-radius:14px;padding:6px 6px 6px 20px;transition:border-color 0.2s,box-shadow 0.2s}
+.search-box:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accentglow)}
+.search-icon{font-size:17px;margin-right:4px;opacity:0.4;flex-shrink:0}
+#companyInput{font-family:var(--fb);font-size:16px;background:transparent;border:none;outline:none;color:var(--text);flex:1;padding:6px 0;min-width:0}
+#companyInput::placeholder{color:var(--muted)}
+.search-btn{font-family:var(--fd);font-size:13px;font-weight:700;padding:10px 22px;background:linear-gradient(135deg,var(--accent),#a855f7);color:#fff;border:none;border-radius:10px;cursor:pointer;white-space:nowrap;transition:all 0.2s;letter-spacing:0.02em;flex-shrink:0}
+.search-btn:hover{filter:brightness(1.12);transform:translateY(-1px)}
+.search-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+.suggestions{position:absolute;top:calc(100% + 8px);left:0;right:0;background:var(--surface2);border:0.5px solid var(--border3);border-radius:12px;overflow:hidden;z-index:50;display:none}
+.sug-item{padding:10px 18px;font-size:14px;cursor:pointer;transition:background 0.15s;display:flex;align-items:center;gap:10px;color:var(--muted2)}
+.sug-item:hover{background:var(--surface3);color:var(--text)}
+.sug-item .sug-icon{font-size:12px;color:var(--muted)}
+.hint-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:1.25rem}
+.hint-chip{font-size:12px;font-family:var(--fm);color:var(--muted);background:var(--surface);border:0.5px solid var(--border2);padding:4px 12px;border-radius:20px;cursor:pointer;transition:all 0.15s}
+.hint-chip:hover{color:var(--accent2);border-color:rgba(184,176,255,0.3)}
+
+/* TICKER */
+.ticker-wrap{overflow:hidden;background:var(--surface);border-top:0.5px solid var(--border);border-bottom:0.5px solid var(--border);padding:9px 0;position:relative;z-index:1}
+.ticker-inner{display:inline-flex;gap:44px;animation:tick 35s linear infinite;white-space:nowrap}
+@keyframes tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.ti{display:inline-flex;align-items:center;gap:7px;font-family:var(--fm);font-size:11.5px}
+.ti-name{color:var(--muted)}
+.ti-price{color:var(--text)}
+.ti-up{color:var(--green)}
+.ti-down{color:var(--red)}
+
+/* LOADING STATE */
+#loadingState{display:none;text-align:center;padding:4rem 2rem;position:relative;z-index:1}
+.loader-company{font-family:var(--fd);font-size:28px;font-weight:800;letter-spacing:-0.02em;margin-bottom:0.5rem}
+.loader-sub{font-size:13px;color:var(--muted);font-family:var(--fm);margin-bottom:2rem}
+.loader-steps{display:flex;flex-direction:column;gap:10px;max-width:340px;margin:0 auto}
+.loader-step{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--muted);background:var(--surface);border:0.5px solid var(--border);border-radius:10px;padding:12px 16px;transition:all 0.3s}
+.loader-step.active{color:var(--text);border-color:var(--accent);background:rgba(124,106,247,0.06)}
+.loader-step.done{color:var(--green);border-color:var(--green-border)}
+.step-dot{width:8px;height:8px;border-radius:50%;background:var(--border2);flex-shrink:0;transition:background 0.3s}
+.loader-step.active .step-dot{background:var(--accent);animation:blink 1s infinite}
+.loader-step.done .step-dot{background:var(--green)}
+
+/* MAIN / REPORT */
+#reportSection{display:none;max-width:1100px;margin:0 auto;padding:2rem 1.5rem 4rem;position:relative;z-index:1}
+
+.back-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem;flex-wrap:wrap;gap:0.5rem}
+.back-btn{font-family:var(--fb);font-size:13px;color:var(--muted);background:transparent;border:0.5px solid var(--border2);border-radius:7px;padding:7px 15px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:6px}
+.back-btn:hover{color:var(--text);border-color:var(--border3);background:var(--surface)}
+.report-ts{font-family:var(--fm);font-size:11px;color:var(--muted)}
+
+/* COMPANY HEADER */
+.co-header{display:flex;align-items:flex-start;justify-content:space-between;gap:1.5rem;margin-bottom:2rem;flex-wrap:wrap}
+.co-name{font-family:var(--fd);font-size:clamp(32px,5vw,52px);font-weight:800;letter-spacing:-0.03em;line-height:1.05}
+.co-meta{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap}
+.co-biz{font-size:13px;color:var(--muted2);line-height:1.75;max-width:580px;margin-top:10px;font-weight:300}
+.score-wrap{display:flex;flex-direction:column;align-items:center;gap:5px;flex-shrink:0}
+.score-ring{width:76px;height:76px;border-radius:50%;border:2.5px solid;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:22px;font-weight:800}
+.score-lbl{font-family:var(--fm);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em}
+
+/* PILLS */
+.pill{font-family:var(--fm);font-size:10px;padding:3px 10px;border-radius:20px;border:0.5px solid;font-weight:500;letter-spacing:0.03em}
+.pill-purple{background:rgba(124,106,247,0.1);color:var(--accent2);border-color:rgba(124,106,247,0.25)}
+.pill-green{background:var(--green-dim);color:var(--green);border-color:var(--green-border)}
+.pill-red{background:var(--red-dim);color:var(--red);border-color:var(--red-border)}
+.pill-amber{background:var(--amber-dim);color:var(--amber);border-color:var(--amber-border)}
+.pill-blue{background:var(--blue-dim);color:var(--blue);border-color:rgba(96,180,255,0.2)}
+
+/* SECTION */
+.rs{background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:1.5rem;margin-bottom:1rem}
+.rs-label{font-family:var(--fm);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1.25rem;display:flex;align-items:center;gap:8px}
+.rs-label::after{content:'';flex:1;height:0.5px;background:var(--border)}
+.rs-num{background:var(--surface3);border:0.5px solid var(--border2);border-radius:4px;padding:1px 7px;font-size:10px;color:var(--accent2)}
+
+/* METRIC CARDS */
+.mc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin-bottom:1rem}
+.mc{background:var(--surface2);border:0.5px solid var(--border);border-radius:12px;padding:1rem 1.1rem;transition:border-color 0.2s}
+.mc:hover{border-color:var(--border2)}
+.mc-lbl{font-size:11px;color:var(--muted);margin-bottom:5px;font-weight:500;letter-spacing:0.01em}
+.mc-val{font-family:var(--fd);font-size:21px;font-weight:700;letter-spacing:-0.02em;margin-bottom:4px}
+.mc-sub{font-family:var(--fm);font-size:10px}
+
+/* BARS */
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.bar-lbl{font-size:12px;color:var(--muted);width:120px;flex-shrink:0;text-align:right;font-family:var(--fm)}
+.bar-track{flex:1;height:5px;background:var(--surface3);border-radius:3px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;transition:width 1.2s cubic-bezier(.4,0,.2,1);width:0}
+.bar-pct{font-family:var(--fm);font-size:11px;width:40px}
+
+/* BULL BEAR */
+.bb-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.bull-box{background:rgba(0,229,160,0.04);border:0.5px solid var(--green-border);border-radius:11px;padding:1.1rem}
+.bear-box{background:rgba(255,95,109,0.04);border:0.5px solid var(--red-border);border-radius:11px;padding:1.1rem}
+.bb-title{font-family:var(--fm);font-size:10px;text-transform:uppercase;letter-spacing:0.1em;font-weight:500;margin-bottom:0.875rem}
+.bull-box .bb-title{color:var(--green)}
+.bear-box .bb-title{color:var(--red)}
+.bb-point{display:flex;gap:8px;font-size:13px;line-height:1.65;color:rgba(238,237,248,0.8);margin-bottom:8px;font-weight:300}
+.bb-dot{width:4px;height:4px;border-radius:50%;flex-shrink:0;margin-top:7px}
+.bull-box .bb-dot{background:var(--green)}
+.bear-box .bb-dot{background:var(--red)}
+
+/* MOAT */
+.moat-row{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:0.5px solid var(--border)}
+.moat-row:last-child{border-bottom:none}
+.moat-ic{width:36px;height:36px;border-radius:9px;background:var(--surface3);border:0.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.moat-k{font-size:11px;color:var(--muted);margin-bottom:2px;font-family:var(--fm)}
+.moat-v{font-size:13px}
+
+/* CHIPS */
+.chip-row{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--fm);font-size:11px;padding:4px 11px;border:0.5px solid var(--border2);border-radius:20px;color:var(--muted2);background:var(--surface2)}
+
+/* MGMT */
+.mgmt-r{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:0.5px solid var(--border);gap:1rem;flex-wrap:wrap}
+.mgmt-r:last-child{border-bottom:none}
+.mgmt-k{font-size:13px;color:var(--muted)}
+.mgmt-v{font-size:13px;text-align:right}
+
+/* SUMMARY */
+.sum-box{background:linear-gradient(135deg,rgba(124,106,247,0.07),rgba(184,176,255,0.03));border:0.5px solid rgba(124,106,247,0.18);border-radius:11px;padding:1.25rem;font-size:14px;line-height:1.85;font-weight:300;color:rgba(238,237,248,0.88)}
+.sum-box strong{color:var(--text);font-weight:500}
+
+/* DIVIDER */
+.div{height:0.5px;background:var(--border);margin:1.25rem 0}
+
+/* DISCLAIMER */
+.disclaimer{font-family:var(--fm);font-size:11px;color:var(--muted);text-align:center;margin-top:1rem;padding:1rem;border:0.5px solid var(--border);border-radius:10px;background:var(--surface);line-height:1.6}
+
+/* ERROR */
+.error-box{background:var(--red-dim);border:0.5px solid var(--red-border);border-radius:12px;padding:1.25rem;color:var(--red);font-size:14px;margin:1rem auto;max-width:500px;text-align:center;display:none}
+
+/* FOOTER */
+footer{border-top:0.5px solid var(--border);padding:2rem;text-align:center;position:relative;z-index:1}
+.fl{font-family:var(--fd);font-size:17px;font-weight:800;background:linear-gradient(130deg,var(--accent2),#f093fb);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px}
+footer p{font-family:var(--fm);font-size:11px;color:var(--muted)}
+
+/* ANIM */
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.fu{animation:fadeUp 0.45s ease both}
+.fu1{animation-delay:0.05s}.fu2{animation-delay:0.12s}.fu3{animation-delay:0.19s}.fu4{animation-delay:0.26s}.fu5{animation-delay:0.33s}
+
+@media(max-width:640px){
+  .bb-grid{grid-template-columns:1fr}
+  .co-header{flex-direction:column}
+  nav .nav-tag{display:none}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">FinLens</div>
+  <div class="nav-tag">AI · ₹ INR · NSE/BSE</div>
+</nav>
+
+<!-- HERO -->
+<section class="hero" id="heroSection">
+  <div class="hero-grid"></div>
+  <div class="hero-orb"></div>
+  <div style="position:relative;z-index:1;width:100%">
+    <div class="eyebrow fu"><div class="eyebrow-dot"></div>Powered by Claude AI · Indian Equity Markets</div>
+    <h1 class="fu fu1">Analyse any stock<br/>in <em>seconds</em></h1>
+    <p class="hero-sub fu fu2">Just type the company name. Claude researches and generates a full financial analysis — revenue, margins, moat, bull/bear case — all in ₹ INR.</p>
+
+    <div class="search-wrap fu fu3">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input id="companyInput" type="text" placeholder="e.g. Reliance Industries, TCS, Infosys, Zomato..." autocomplete="off" />
+        <button class="search-btn" id="searchBtn" onclick="startAnalysis()">Analyse →</button>
+      </div>
+      <div class="suggestions" id="suggestions"></div>
+    </div>
+
+    <div class="hint-row fu fu4">
+      <span class="hint-chip" onclick="quickSearch('Reliance Industries')">Reliance Industries</span>
+      <span class="hint-chip" onclick="quickSearch('Tata Consultancy Services')">TCS</span>
+      <span class="hint-chip" onclick="quickSearch('HDFC Bank')">HDFC Bank</span>
+      <span class="hint-chip" onclick="quickSearch('Zomato')">Zomato</span>
+      <span class="hint-chip" onclick="quickSearch('Infosys')">Infosys</span>
+      <span class="hint-chip" onclick="quickSearch('Adani Enterprises')">Adani</span>
+    </div>
+
+    <div class="error-box" id="errorBox"></div>
+  </div>
+</section>
+
+<!-- TICKER -->
+<div class="ticker-wrap">
+  <div class="ticker-inner" id="tickerInner"></div>
+</div>
+
+<!-- LOADING -->
+<div id="loadingState">
+  <div class="loader-company" id="loaderName"></div>
+  <div class="loader-sub">Researching financial data...</div>
+  <div class="loader-steps">
+    <div class="loader-step" id="step1"><div class="step-dot"></div>Fetching company profile & sector</div>
+    <div class="loader-step" id="step2"><div class="step-dot"></div>Analysing revenue & margin data</div>
+    <div class="loader-step" id="step3"><div class="step-dot"></div>Evaluating competitive moat</div>
+    <div class="loader-step" id="step4"><div class="step-dot"></div>Building bull & bear case</div>
+    <div class="loader-step" id="step5"><div class="step-dot"></div>Generating 12-month summary</div>
+  </div>
+</div>
+
+<!-- REPORT -->
+<div id="reportSection">
+  <div class="back-row">
+    <button class="back-btn" onclick="goBack()">← New search</button>
+    <div class="report-ts" id="reportTs"></div>
+  </div>
+
+  <!-- Header -->
+  <div class="co-header fu">
+    <div>
+      <div class="co-name" id="rName"></div>
+      <div class="co-meta" id="rMeta"></div>
+      <div class="co-biz" id="rBiz"></div>
+    </div>
+    <div class="score-wrap">
+      <div class="score-ring" id="rRing"></div>
+      <div class="score-lbl">Health score</div>
+      <div style="font-size:11px;margin-top:2px;" id="rScoreLbl"></div>
+    </div>
+  </div>
+
+  <!-- Metrics -->
+  <div class="rs-label fu1"><span class="rs-num">02</span>Financial health matrix</div>
+  <div class="mc-grid fu1" id="rMetrics"></div>
+
+  <!-- Margin bars -->
+  <div class="rs fu2">
+    <div class="rs-label"><span class="rs-num">02b</span>Margin & profitability</div>
+    <div id="rBars"></div>
+  </div>
+
+  <!-- Moat -->
+  <div class="rs fu2">
+    <div class="rs-label"><span class="rs-num">03</span>Moat & competitive landscape</div>
+    <div style="margin-bottom:1rem">
+      <div style="font-size:11px;color:var(--muted);font-family:var(--fm);margin-bottom:8px">Primary competitors</div>
+      <div class="chip-row" id="rComps"></div>
+    </div>
+    <div class="div"></div>
+    <div class="moat-row"><div class="moat-ic">🏰</div><div><div class="moat-k">Competitive moat</div><div class="moat-v" id="rMoat"></div></div></div>
+    <div class="moat-row"><div class="moat-ic" id="rMktIc"></div><div><div class="moat-k">Market share trend</div><div class="moat-v" id="rMktShare"></div></div></div>
+  </div>
+
+  <!-- Bull Bear -->
+  <div class="rs fu3">
+    <div class="rs-label"><span class="rs-num">04</span>Bull vs. bear case</div>
+    <div class="bb-grid">
+      <div class="bull-box"><div class="bb-title">▲ Bull case</div><div id="rBull"></div></div>
+      <div class="bear-box"><div class="bb-title">▼ Bear case</div><div id="rBear"></div></div>
+    </div>
+  </div>
+
+  <!-- Management -->
+  <div class="rs fu4">
+    <div class="rs-label"><span class="rs-num">05</span>Management & capital allocation</div>
+    <div class="mgmt-r"><span class="mgmt-k">Leadership</span><span class="mgmt-v" id="rCeo"></span></div>
+    <div class="mgmt-r"><span class="mgmt-k">Capital strategy</span><span class="mgmt-v" id="rCapital"></span></div>
+    <div class="mgmt-r"><span class="mgmt-k">ROE</span><span class="mgmt-v" id="rRoe"></span></div>
+    <div class="mgmt-r"><span class="mgmt-k">Shareholder yield</span><span class="mgmt-v" id="rYield"></span></div>
+  </div>
+
+  <!-- Summary -->
+  <div class="rs fu5">
+    <div class="rs-label"><span class="rs-num">06</span>Actionable 12-month summary</div>
+    <div class="sum-box" id="rSummary"></div>
+  </div>
+
+  <div class="disclaimer">
+    ⚠️ Generated by Claude AI · Data sourced from publicly available information · All monetary values in ₹ (Indian Rupees / Crores) · <strong>Not investment advice.</strong> Always verify with official filings before making decisions.
+  </div>
+</div>
+
+<footer>
+  <div class="fl">FinLens</div>
+  <p>AI-powered financial analysis · Indian equity markets · ₹ INR</p>
+  <p style="margin-top:4px;color:rgba(110,109,130,0.5)">Not investment advice · For educational purposes only</p>
+</footer>
+
+<script>
+// TICKER
+const tickers=[
+  {n:'RELIANCE',p:'₹2,841',c:'+1.2%',u:true},{n:'TCS',p:'₹3,512',c:'+0.8%',u:true},
+  {n:'HDFCBANK',p:'₹1,672',c:'-0.4%',u:false},{n:'INFY',p:'₹1,428',c:'+1.5%',u:true},
+  {n:'WIPRO',p:'₹462',c:'-0.7%',u:false},{n:'BAJFINANCE',p:'₹7,230',c:'+2.1%',u:true},
+  {n:'ICICIBANK',p:'₹1,094',c:'+0.9%',u:true},{n:'LT',p:'₹3,645',c:'-0.3%',u:false},
+  {n:'MARUTI',p:'₹12,840',c:'+0.6%',u:true},{n:'SUNPHARMA',p:'₹1,698',c:'+1.8%',u:true},
+  {n:'NIFTY 50',p:'₹22,350',c:'+0.5%',u:true},{n:'SENSEX',p:'₹73,650',c:'+0.4%',u:true},
+  {n:'ZOMATO',p:'₹186',c:'+3.2%',u:true},{n:'ADANIENT',p:'₹2,910',c:'-1.1%',u:false},
+];
+const ti=document.getElementById('tickerInner');
+ti.innerHTML=[...tickers,...tickers].map(t=>`<span class="ti"><span class="ti-name">${t.n}</span><span class="ti-price">${t.p}</span><span class="${t.u?'ti-up':'ti-down'}">${t.c}</span></span>`).join('');
+
+// SUGGESTIONS
+const popular=['Reliance Industries','Tata Consultancy Services','HDFC Bank','Infosys','ICICI Bank','Wipro','Bajaj Finance','Maruti Suzuki','Asian Paints','Zomato','Nykaa','Paytm','Adani Enterprises','ITC','Hindustan Unilever','Larsen & Toubro','Sun Pharma','Titan Company','Nestle India','Pidilite Industries','Tata Motors','Mahindra & Mahindra','Kotak Mahindra Bank','Axis Bank','State Bank of India'];
+
+const inp=document.getElementById('companyInput');
+const sugBox=document.getElementById('suggestions');
+
+inp.addEventListener('input',()=>{
+  const v=inp.value.trim().toLowerCase();
+  if(v.length<2){sugBox.style.display='none';return}
+  const matches=popular.filter(c=>c.toLowerCase().includes(v)).slice(0,6);
+  if(!matches.length){sugBox.style.display='none';return}
+  sugBox.innerHTML=matches.map(m=>`<div class="sug-item" onclick="quickSearch('${m}')"><span class="sug-icon">📊</span>${m}</div>`).join('');
+  sugBox.style.display='block';
+});
+
+document.addEventListener('click',e=>{if(!e.target.closest('.search-wrap'))sugBox.style.display='none'});
+inp.addEventListener('keydown',e=>{if(e.key==='Enter')startAnalysis()});
+
+function quickSearch(name){
+  inp.value=name;
+  sugBox.style.display='none';
+  startAnalysis();
+}
+
+// LOADING ANIMATION
+let stepTimer=null;
+function animateSteps(){
+  const steps=['step1','step2','step3','step4','step5'];
+  let i=0;
+  steps.forEach(s=>document.getElementById(s).className='loader-step');
+  function next(){
+    if(i>0)document.getElementById(steps[i-1]).className='loader-step done';
+    if(i<steps.length){document.getElementById(steps[i]).className='loader-step active';i++;stepTimer=setTimeout(next,900)}
+  }
+  next();
+}
+
+function clearStepTimer(){if(stepTimer)clearTimeout(stepTimer)}
+
+// SHOW/HIDE
+function showLoading(name){
+  document.getElementById('heroSection').style.display='none';
+  document.getElementById('reportSection').style.display='none';
+  document.getElementById('loadingState').style.display='block';
+  document.getElementById('loaderName').textContent=name;
+  animateSteps();
+}
+
+function showReport(){
+  clearStepTimer();
+  document.getElementById('loadingState').style.display='none';
+  document.getElementById('reportSection').style.display='block';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function goBack(){
+  clearStepTimer();
+  document.getElementById('reportSection').style.display='none';
+  document.getElementById('loadingState').style.display='none';
+  document.getElementById('heroSection').style.display='flex';
+  document.getElementById('errorBox').style.display='none';
+  inp.value='';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function showError(msg){
+  clearStepTimer();
+  document.getElementById('loadingState').style.display='none';
+  document.getElementById('heroSection').style.display='flex';
+  const eb=document.getElementById('errorBox');
+  eb.style.display='block';
+  eb.textContent='⚠️ '+msg;
+}
+
+// HELPERS
+function fmtINR(n){
+  if(!n||isNaN(n))return'—';
+  n=parseFloat(n);
+  if(n>=100000)return'₹'+(n/100000).toFixed(1)+'L Cr';
+  if(n>=1000)return'₹'+(n/1000).toFixed(1)+'K Cr';
+  if(n>=1)return'₹'+n.toFixed(0)+' Cr';
+  return'₹'+n;
+}
+
+function scoreStyle(s){
+  s=parseFloat(s);
+  if(s>=8)return{color:'#00e5a0',label:'Strong fundamentals'};
+  if(s>=6)return{color:'#ffcc44',label:'Moderate outlook'};
+  return{color:'#ff5f6d',label:'Caution advised'};
+}
+
+function phaseClass(p){
+  if(!p)return'pill-blue';
+  p=p.toLowerCase();
+  if(p.includes('hyper')||p.includes('growth'))return'pill-green';
+  if(p.includes('mature'))return'pill-amber';
+  if(p.includes('turnaround'))return'pill-amber';
+  if(p.includes('declin'))return'pill-red';
+  return'pill-blue';
+}
+
+// RENDER REPORT
+function renderReport(data){
+  document.getElementById('reportTs').textContent='Analysis: '+new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
+
+  // Header
+  document.getElementById('rName').textContent=data.companyName||'—';
+  document.getElementById('rBiz').textContent=data.businessModel||'';
+  const sc=scoreStyle(data.healthScore);
+  document.getElementById('rRing').textContent=(data.healthScore||'?')+'/10';
+  document.getElementById('rRing').style.cssText=`width:76px;height:76px;border-radius:50%;border:2.5px solid ${sc.color};display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:21px;font-weight:800;color:${sc.color}`;
+  document.getElementById('rScoreLbl').textContent=sc.label;
+  document.getElementById('rScoreLbl').style.color=sc.color;
+
+  document.getElementById('rMeta').innerHTML=`
+    <span class="pill pill-purple">${data.ticker||'NSE'}</span>
+    <span class="pill ${phaseClass(data.phase)}">${data.phase||'—'}</span>
+    <span style="font-size:11px;color:var(--muted);font-family:var(--fm)">${data.sector||''}</span>
+  `;
+
+  // Metrics
+  const rev=parseFloat(data.revenue)||0;
+  const rg=parseFloat(data.revenueGrowth)||0;
+  const fcf=parseFloat(data.fcf)||0;
+  const dte=parseFloat(data.debtToEquity)||0;
+  const eps=parseFloat(data.eps)||0;
+  const eg=parseFloat(data.epsGrowth)||0;
+  const pe=parseFloat(data.pe)||0;
+  const mc=parseFloat(data.marketCap)||0;
+  const cr=parseFloat(data.currentRatio)||0;
+
+  const metrics=[
+    {l:'Revenue',v:fmtINR(rev),s:(rg>=0?'+':'')+rg+'% YoY',ok:rg>=0},
+    {l:'Market cap',v:fmtINR(mc),s:'P/E: '+(pe||'—')+'x',ok:pe<50&&pe>0},
+    {l:'EPS',v:'₹'+eps,s:(eg>=0?'+':'')+eg+'% YoY',ok:eg>=0},
+    {l:'Free cash flow',v:fmtINR(fcf),s:fcf>0?'Cash positive':'Cash burn',ok:fcf>0},
+    {l:'Debt / Equity',v:dte.toFixed(1)+'x',s:dte<1?'Manageable':'High leverage',ok:dte<1},
+    {l:'Current ratio',v:cr.toFixed(1)+'x',s:cr>=1.2?'Good liquidity':'Watch liquidity',ok:cr>=1.2},
+  ];
+
+  document.getElementById('rMetrics').innerHTML=metrics.map(m=>`
+    <div class="mc">
+      <div class="mc-lbl">${m.l}</div>
+      <div class="mc-val" style="color:${m.ok?'var(--green)':'var(--red)'}">${m.v}</div>
+      <div class="mc-sub" style="color:${m.ok?'var(--green)':'var(--red)'}">
+        ${m.ok?'▲':'▼'} <span style="color:var(--muted)">${m.s}</span>
+      </div>
+    </div>
+  `).join('');
+
+  // Bars
+  const gm=parseFloat(data.grossMargin)||0;
+  const om=parseFloat(data.operatingMargin)||0;
+  const roe=parseFloat(data.roe)||0;
+  const nim=parseFloat(data.netMargin)||0;
+  const bars=[
+    {l:'Gross margin',v:gm,max:80,ok:gm>=25},
+    {l:'Operating margin',v:om,max:50,ok:om>=10},
+    {l:'Net margin',v:nim,max:40,ok:nim>=8},
+    {l:'ROE',v:roe,max:40,ok:roe>=12},
+  ];
+  document.getElementById('rBars').innerHTML=bars.map(b=>`
+    <div class="bar-row">
+      <div class="bar-lbl">${b.l}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${Math.min(100,(b.v/b.max)*100)}%;background:${b.ok?'var(--green)':'var(--red)'}"></div></div>
+      <div class="bar-pct" style="color:${b.ok?'var(--green)':'var(--red)'}">${b.v}%</div>
+    </div>
+  `).join('');
+
+  // Moat
+  const comps=(data.competitors||[]);
+  document.getElementById('rComps').innerHTML=comps.map(c=>`<span class="chip">${c}</span>`).join('');
+  document.getElementById('rMoat').textContent=data.moat||'—';
+  const mktMap={Growing:'📈',Stagnant:'➡️',Shrinking:'📉'};
+  document.getElementById('rMktIc').textContent=mktMap[data.marketShareTrend]||'➡️';
+  document.getElementById('rMktShare').textContent=data.marketShareTrend||'—';
+
+  // Bull/Bear
+  const bulls=(data.bullCase||[]);
+  const bears=(data.bearCase||[]);
+  document.getElementById('rBull').innerHTML=bulls.map(b=>`<div class="bb-point"><div class="bb-dot"></div><div>${b}</div></div>`).join('');
+  document.getElementById('rBear').innerHTML=bears.map(b=>`<div class="bb-point"><div class="bb-dot"></div><div>${b}</div></div>`).join('');
+
+  // Mgmt
+  document.getElementById('rCeo').textContent=data.leadership||'—';
+  document.getElementById('rCapital').innerHTML=`<span class="pill pill-blue">${data.capitalAllocation||'—'}</span>`;
+  document.getElementById('rRoe').innerHTML=`<span style="color:${roe>=12?'var(--green)':'var(--amber)'};font-family:var(--fm)">${roe}%</span>`;
+  document.getElementById('rYield').textContent=data.shareholderYield||'—';
+
+  // Summary
+  document.getElementById('rSummary').innerHTML=data.summary||'—';
+
+  showReport();
+}
+
+// MAIN ANALYSIS FUNCTION
+async function startAnalysis(){
+  const name=inp.value.trim();
+  if(!name){inp.focus();return}
+
+  sugBox.style.display='none';
+  document.getElementById('errorBox').style.display='none';
+  document.getElementById('searchBtn').disabled=true;
+
+  showLoading(name);
+
+  const prompt=`You are an elite financial analyst specialising in Indian stock markets. Analyse the company "${name}" and return ONLY a valid JSON object (no markdown, no backticks, no extra text) with this exact structure:
+
+{
+  "companyName": "Full official company name",
+  "ticker": "NSE ticker symbol",
+  "sector": "Sector & Industry",
+  "phase": "one of: Hyper-growth | Growth | Mature | Turnaround | Declining",
+  "businessModel": "2-3 sentence explanation of how they make money",
+  "healthScore": 7,
+  "revenue": 900000,
+  "revenueGrowth": 12,
+  "grossMargin": 38,
+  "operatingMargin": 15,
+  "netMargin": 10,
+  "eps": 95,
+  "epsGrowth": 8,
+  "fcf": 45000,
+  "debtToEquity": 0.4,
+  "marketCap": 1700000,
+  "pe": 28,
+  "currentRatio": 1.3,
+  "roe": 14,
+  "competitors": ["Competitor 1", "Competitor 2", "Competitor 3"],
+  "moat": "Description of competitive advantages",
+  "marketShareTrend": "Growing",
+  "bullCase": ["Bull reason 1", "Bull reason 2", "Bull reason 3"],
+  "bearCase": ["Bear risk 1", "Bear risk 2", "Bear risk 3"],
+  "leadership": "CEO name and key note about insider ownership",
+  "capitalAllocation": "Reinvesting for growth",
+  "shareholderYield": "e.g. 0.5% dividend yield + buybacks",
+  "summary": "HTML string with 2 paragraphs using <strong> tags for emphasis. First para: current state. Second para: 12-month outlook."
+}
+
+CRITICAL RULES:
+- All monetary values must be in Indian Rupees (₹) in CRORES (Cr). Revenue, FCF, marketCap are numbers in Crores.
+- Use the most recent publicly available financial data for this company.
+- If the company is not Indian or not listed, still analyse it but convert/estimate values in ₹ Cr.
+- healthScore is a number 1-10 based on fundamental strength.
+- Return ONLY the JSON. No preamble, no explanation, no markdown fences.`;
+
+  try {
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+
+    if(!res.ok){
+      const err=await res.json().catch(()=>({}));
+      throw new Error(err.error?.message||'API request failed ('+res.status+')');
+    }
+
+    const data=await res.json();
+    const raw=data.content?.map(b=>b.text||'').join('').trim();
+    if(!raw)throw new Error('Empty response from AI');
+
+    // Clean any accidental markdown
+    const cleaned=raw.replace(/```json|```/g,'').trim();
+    let parsed;
+    try{parsed=JSON.parse(cleaned)}
+    catch(e){
+      // Try to extract JSON if there's extra text
+      const match=cleaned.match(/\{[\s\S]*\}/);
+      if(match)parsed=JSON.parse(match[0]);
+      else throw new Error('Could not parse AI response as JSON');
+    }
+
+    document.getElementById('searchBtn').disabled=false;
+    renderReport(parsed);
+
+  } catch(e){
+    document.getElementById('searchBtn').disabled=false;
+    showError('Analysis failed: '+e.message+'. Please try again.');
+    console.error(e);
+  }
+}
+</script>
+</body>
+</html>
